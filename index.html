@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pizarra Distribuida</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.min.js"></script>
+    <style>
+        #canvas {
+            border: 1px solid black;
+            touch-action: none; /* Prevents touch scrolling on mobile devices */
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas" width="800" height="600"></canvas>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const context = canvas.getContext('2d');
+        const socket = io();
+
+        let drawing = false;
+
+        canvas.addEventListener('mousedown', (e) => {
+            drawing = true;
+            draw(e.clientX - canvas.offsetLeft, e.clientY - canvas.offsetTop, false);
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (drawing) {
+                draw(e.clientX - canvas.offsetLeft, e.clientY - canvas.offsetTop, true);
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            drawing = false;
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            drawing = false;
+        });
+
+        const draw = (x, y, isDrawing) => {
+            if (isDrawing) {
+                context.lineTo(x, y);
+                context.stroke();
+                socket.emit('draw_event', {
+                    x: x,
+                    y: y,
+                    drawing: true
+                });
+            } else {
+                context.beginPath();
+                context.moveTo(x, y);
+                socket.emit('draw_event', {
+                    x: x,
+                    y: y,
+                    drawing: false
+                });
+            }
+        };
+
+        socket.on('draw_event', (data) => {
+            if (data.drawing) {
+                context.lineTo(data.x, data.y);
+                context.stroke();
+            } else {
+                context.beginPath();
+                context.moveTo(data.x, data.y);
+            }
+        });
+    </script>
+</body>
+</html>
